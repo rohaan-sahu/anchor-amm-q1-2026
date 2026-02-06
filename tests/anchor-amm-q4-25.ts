@@ -115,7 +115,7 @@ describe("anchor-amm-q4-25", () => {
     );
 
     const vaultYAddressDerived = getAssociatedTokenAddressSync(
-      mintX,
+      mintY,
       configAddress,
       true,
       program.programId
