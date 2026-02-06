@@ -2,6 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { AnchorAmmQ425 } from "../target/types/anchor_amm_q4_25";
 import { createMint, getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import { assert } from "chai";
 
 describe("anchor-amm-q4-25", () => {
 
@@ -60,6 +61,42 @@ describe("anchor-amm-q4-25", () => {
       0
     );
 
+    mintLP = await createMint(
+      provider.connection,
+      initializer,
+      initializer.publicKey,
+      null,
+      0
+    );
+
+    
+  })
+
+  // By this point we have the valid address of:
+  // 1. System and SPL programs account addresses
+  // 2. mintX, mintY, mintLP address from "createMint()"
+
+  it("Is initialized!", async () => {
+    // Add your test here.
+    
+    let fees:number = 100;
+
+    const tx = await program.methods.initialize(seed,fees,null).signers([initializer]).rpc();
+
+
+    // Validity of 'config' will be check only after it has been initallized
+    // This could be a problem
+    // Verify account exists 
+    
+    const configAccountInfo = await program.provider.connection.getAccountInfo(configAddress);
+
+    // if "configAccountInfo" is valid . Good news.
+    assert.isNotNull(configAccountInfo,"Config account not initialized");
+    assert.equal(configAccountInfo.owner.toString(),program.programId.toString(),"Config account's owner is not our program");
+
+    // Now that we hopefully know the valid onChain address of 'config'
+    // We can now go ahead create the vault accounts that use it as 'owner/authority'.
+    // Although, I am not sure it is necessasy. But better safe than fail tests.
     const vaultXAccount = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       initializer,
@@ -80,24 +117,12 @@ describe("anchor-amm-q4-25", () => {
     // Hence it is valid
     vaultX = vaultXAccount.address;
     vaultY = vaultYAccount.address;
-  })
 
-  it("Is initialized!", async () => {
-    // Add your test here.
-    
-    let fees:number = 100;
+    // By this time the validity of the remaining accounts is confirmed
+    // 3. config, vaultX & vaultY address are valid
+    // and the test should pass with the console log
 
-    const tx = await program.methods.initialize(seed,fees,null).signers([initializer]).rpc();
-
-    // Validity of 'config' will be check only after it has been initallized
-    // This could be a problem
-    // Verify by fetching 
-    const configAccount = await program.account.config.fetch(configAddress);
-    // Verify account exists 
-    const accountInfo = await program.provider.connection.getAccountInfo(configAddress);
-
-
-
+    // Just the console logging of transaction signature.
     console.log("Your transaction signature", tx);
   });
 });
