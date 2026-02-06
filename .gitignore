@@ -1,4 +1,6 @@
 .anchor
+.keypairs
+keypairs
 .DS_Store
 target
 **/*.rs.bk

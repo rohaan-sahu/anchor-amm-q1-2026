@@ -9,6 +9,10 @@ use crate::state::Config;
 #[derive(Accounts)]
 #[instruction(seed: u64)]
 pub struct Initialize<'info> {
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+
     #[account(mut)]
     pub initializer: Signer<'info>,
     pub mint_x: Account<'info, Mint>,
@@ -16,7 +20,15 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = initializer,
-        seeds = [b"lp", config.key.as_ref()],
+        seeds = [b"config", seed.to_le_bytes().as_ref()],
+        bump,
+        space = Config::DISCRIMINATOR.len() + Config::INIT_SPACE,
+    )]
+    pub config: Account<'info, Config>,
+    #[account(
+        init,
+        payer = initializer,
+        seeds = [b"lp", config.key().as_ref()],
         bump,
         mint::decimals = 6,
         mint::authority = config,
@@ -35,18 +47,7 @@ pub struct Initialize<'info> {
         associated_token::mint = mint_y,
         associated_token::authority = config,
     )]
-    pub vault_y: Account<'info, TokenAccount>,
-    #[account(
-        init,
-        payer = initializer,
-        seeds = [b"config", seed.to_le_bytes().as_ref()],
-        bump,
-        space = Config::DISCRIMINATOR.len() + Config::INIT_SPACE,
-    )]
-    pub config: Account<'info, Config>,
-    pub token_program: Program<'info, Token>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub system_program: Program<'info, System>,
+    pub vault_y: Account<'info, TokenAccount>
 }
 
 impl<'info> Initialize<'info> {
