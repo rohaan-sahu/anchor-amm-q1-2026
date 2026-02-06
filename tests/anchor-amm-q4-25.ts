@@ -72,7 +72,7 @@ describe("anchor-amm-q4-25", () => {
       initializer.publicKey,
       null,
       0
-    );
+    );                      // Here programId means SPL token program id. Not our "program.programId"
 
     mintY = await createMint(
       provider.connection,
@@ -80,7 +80,7 @@ describe("anchor-amm-q4-25", () => {
       initializer.publicKey,
       null,
       0
-    );
+    );                      // Here programId means SPL token program id. Not our "program.programId"
 
     // This mint "mint_lp == mintLp" is to be derived not created.
     // Will be done in the top part of 'describe' scope, right below 'config's derivation
@@ -160,6 +160,8 @@ describe("anchor-amm-q4-25", () => {
     const mintLpAccountInfo = await program.provider.connection.getAccountInfo(mintLpAddress);
 
     assert.isNotNull(mintLpAccountInfo,"MintLp account not initialized");
+
+    // This is not a correct assertiopn to make
     //assert.equal(mintLpAccountInfo.owner.toString(),program.programId.toString(),"MintLp account's owner is not our program");
 
     // Now that we hopefully know the valid onChain address of 'config'
@@ -177,7 +179,8 @@ describe("anchor-amm-q4-25", () => {
       provider.connection,
       initializer,
       mintY,
-      configAddress
+      configAddress,
+      true                    // Allow owner off curve
     );
 
     // getOrCreateAssociatedTokenAccount() returns an 'Account' type, when resolved
