@@ -1,8 +1,15 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { AnchorAmmQ425 } from "../target/types/anchor_amm_q4_25";
-import { createMint, getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import {
+  createMint,
+  getAssociatedTokenAddressSync,
+  getOrCreateAssociatedTokenAccount,
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID
+} from "@solana/spl-token";
 import { assert } from "chai";
+import { SystemProgram } from "@solana/web3.js";
 
 describe("anchor-amm-q4-25", () => {
 
@@ -27,6 +34,15 @@ describe("anchor-amm-q4-25", () => {
       program.programId,
   );
 
+
+  // Deriving "mint_ls == mintLp" address
+  // It will be initialized by our 'initialize' call
+  const mint_lp_seeds = [Buffer.from("lp"),configAddress.toBuffer()];
+  const [mintLpAddress,_mintLpBump] = anchor.web3.PublicKey.findProgramAddressSync(
+    mint_lp_seeds,
+    program.programId
+  );
+
   // Declaring the Token Mints & ATAs here so that they have Global scope
   // They shall get initialized as they receive their value in the scope of 'before'
   // Using 'let' because, 'const' declarations must be initialized. Didn't know that.
@@ -39,9 +55,14 @@ describe("anchor-amm-q4-25", () => {
   let vaultX: anchor.web3.PublicKey;
   let vaultY: anchor.web3.PublicKey;
 
-  //
 
   before(async () =>{
+
+    // Airdrop for payer of feer
+    await provider.connection.requestAirdrop(
+      initializer.publicKey,
+      10*(anchor.web3.LAMPORTS_PER_SOL)
+    )
 
     // createMint() returns a publicKey asynchronously AFTER the mint is created.
     // Hence these will be valid account addresses
@@ -61,13 +82,17 @@ describe("anchor-amm-q4-25", () => {
       0
     );
 
-    mintLP = await createMint(
-      provider.connection,
-      initializer,
-      initializer.publicKey,
-      null,
-      0
-    );
+    // This mint "mint_lp == mintLp" is to be derived not created.
+    // Will be done in the top part of 'describe' scope, right below 'config's derivation
+    // It will be initialized by our program with or after 'init' of 'config'
+    // This is a PDA that takes 'confog.key().as_ref()' as a seed
+    // mintLP = await createMint(
+    //   provider.connection,
+    //   initializer,
+    //   initializer.publicKey,
+    //   null,
+    //   0
+    // );
 
     
   })
@@ -81,7 +106,36 @@ describe("anchor-amm-q4-25", () => {
     
     let fees:number = 100;
 
-    const tx = await program.methods.initialize(seed,fees,null).signers([initializer]).rpc();
+    // Deriving the vault addresses with  STILL NOT VALIDATED 'configAddress'
+    const vaultXAddressDerived = getAssociatedTokenAddressSync(
+      mintX,
+      configAddress,
+      true,
+      program.programId
+    );
+
+    const vaultYAddressDerived = getAssociatedTokenAddressSync(
+      mintX,
+      configAddress,
+      true,
+      program.programId
+    );
+
+    const tx = await program.methods.initialize(seed,fees,null)
+      .accountsStrict({
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        initializer: initializer.publicKey,
+        mintX: mintX,
+        mintY: mintY,
+        config: configAddress,
+        mintLp: mintLpAddress,
+        vaultX: vaultXAddressDerived,
+        vaultY: vaultYAddressDerived
+      })
+      .signers([initializer])
+      .rpc();
 
 
     // Validity of 'config' will be check only after it has been initallized
@@ -93,6 +147,13 @@ describe("anchor-amm-q4-25", () => {
     // if "configAccountInfo" is valid . Good news.
     assert.isNotNull(configAccountInfo,"Config account not initialized");
     assert.equal(configAccountInfo.owner.toString(),program.programId.toString(),"Config account's owner is not our program");
+
+    // Validity check for 'mint_lp == mintLp'
+
+    const mintLpAccountInfo = await program.provider.connection.getAccountInfo(mintLpAddress);
+
+    assert.isNotNull(mintLpAccountInfo,"MintLp account not initialized");
+    assert.equal(mintLpAccountInfo.owner.toString(),program.programId.toString(),"MintLp account's owner is not our program");
 
     // Now that we hopefully know the valid onChain address of 'config'
     // We can now go ahead create the vault accounts that use it as 'owner/authority'.
