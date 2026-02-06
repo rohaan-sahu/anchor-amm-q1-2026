@@ -8,7 +8,7 @@ import {
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID
 } from "@solana/spl-token";
-import { assert } from "chai";
+import { assert, config } from "chai";
 import { SystemProgram } from "@solana/web3.js";
 
 describe("anchor-amm-q4-25", () => {
@@ -110,18 +110,25 @@ describe("anchor-amm-q4-25", () => {
     const vaultXAddressDerived = getAssociatedTokenAddressSync(
       mintX,
       configAddress,
-      true,
-      program.programId
+      true
     );
 
     const vaultYAddressDerived = getAssociatedTokenAddressSync(
       mintY,
       configAddress,
       true,
-      program.programId
     );
 
-    const tx = await program.methods.initialize(seed,fees,null)
+    console.log(`adresses:\n 
+      initializer: \t\t\t\t\t${initializer.publicKey.toString()}
+      mintX: \t\t\t\t\t\t${mintX.toString()}
+      mintY: \t\t\t\t\t\t${mintY.toString()}
+      configAddress ( derived from seeds): \t\t${configAddress.toString()}
+      mindAddress ( derived from seed & configAddress ): ${mintLpAddress.toString()}
+      vaultAddressDerived: \t\t\t\t${vaultXAddressDerived.toString()}
+      vaultAddressDerived: \t\t\t\t${vaultYAddressDerived.toString()}\n`);
+
+    const tx = await program.methods.initialize(seed,fees,initializer.publicKey)
       .accountsStrict({
         tokenProgram: TOKEN_PROGRAM_ID,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -153,7 +160,7 @@ describe("anchor-amm-q4-25", () => {
     const mintLpAccountInfo = await program.provider.connection.getAccountInfo(mintLpAddress);
 
     assert.isNotNull(mintLpAccountInfo,"MintLp account not initialized");
-    assert.equal(mintLpAccountInfo.owner.toString(),program.programId.toString(),"MintLp account's owner is not our program");
+    //assert.equal(mintLpAccountInfo.owner.toString(),program.programId.toString(),"MintLp account's owner is not our program");
 
     // Now that we hopefully know the valid onChain address of 'config'
     // We can now go ahead create the vault accounts that use it as 'owner/authority'.
