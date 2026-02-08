@@ -161,7 +161,7 @@ describe("anchor-amm-q4-25", () => {
 
     assert.isNotNull(mintLpAccountInfo,"MintLp account not initialized");
 
-    // This is not a correct assertiopn to make
+    // This is not a correct assertion to make
     //assert.equal(mintLpAccountInfo.owner.toString(),program.programId.toString(),"MintLp account's owner is not our program");
 
     // Now that we hopefully know the valid onChain address of 'config'

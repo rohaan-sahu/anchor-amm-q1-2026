@@ -5,3 +5,9 @@
 [2026-02-06--19-30-35 INFO txtx::svm::deploy_program] Program Created - Program 9FVkz5L9LZix4zXYmqJLzKBwRpm9aJ539J26UsZSrLWN has been deployed
 [2026-02-06--19-30-51 INFO parity_ws::io] Accepted a new tcp connection from 127.0.0.1:33606.
 [2026-02-06--19-30-53 INFO parity_ws::io] Accepted a new tcp connection from 127.0.0.1:33612.
+[2026-02-06--20-09-05 INFO actix_server::worker] shutting down idle worker
+[2026-02-06--20-09-05 INFO actix_server::accept] accept thread stopped
+[2026-02-06--20-09-05 INFO actix_server::worker] shutting down idle worker
+[2026-02-06--20-09-05 INFO actix_server::worker] shutting down idle worker
+[2026-02-06--20-09-05 INFO actix_server::worker] shutting down idle worker
+[2026-02-06--20-09-05 INFO actix_server::worker] shutting down idle worker
